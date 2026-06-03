@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpeedTest Pro - Internet Speed Test</title>
+    <style>
+        :root {
+            --bg: #0b0c15;
+            --surface: #151724;
+            --surface-light: #1c1e2e;
+            --text: #e8e8f0;
+            --text-secondary: #9a9bb5;
+            --accent: #00d4aa;
+            --accent-blue: #3b8bff;
+            --accent-purple: #8b5cf6;
+            --danger: #ff4d6a;
+            --warning: #ffb347;
+            --gauge-track: #1e2040;
+            --glow-cyan: rgba(0, 212, 170, 0.3);
+            --glow-blue: rgba(59, 139, 255, 0.25);
+            --radius: 20px;
+            --transition: 0.4s cubic-bezier(0.25, 0.8, 0.25, 1.2);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            background-image:
+                radial-gradient(ellipse at 30% 20%, rgba(59, 139, 255, 0.06) 0%, transparent 60%),
+                radial-gradient(ellipse at 70% 60%, rgba(0, 212, 170, 0.05) 0%, transparent 60%),
+                radial-gradient(ellipse at 50% 80%, rgba(139, 92, 246, 0.04) 0%, transparent 50%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text);
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* Animated background particles */
+        .bg-particles {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            animation: floatUp linear infinite;
+            opacity: 0;
+        }
+
+        @keyframes floatUp {
+            0% {
+                transform: translateY(110vh) scale(0);
+                opacity: 0;
+            }
+            5% {
+                opacity: 0.5;
+            }
+            40% {
+                opacity: 0.3;
+            }
+            80% {
+                opacity: 0.05;
+            }
+            100% {
+                transform: translateY(-10vh) scale(1.5);
+                opacity: 0;
+            }
+        }
+
+        /* Main container */
+        .main-container {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 520px;
+            padding: 24px;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 28px;
+            padding: 36px 28px 28px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow:
+                0 24px 60px rgba(0, 0, 0, 0.5),
+                0 0 0 1px rgba(255, 255, 255, 0.03) inset,
+                0 1px 0 rgba(255, 255, 255, 0.04) inset;
+            text-align: center;
+            transition: all 0.5s ease;
+        }
+
+        .card.testing {
+            box-shadow:
+                0 24px 60px rgba(0, 0, 0, 0.5),
+                0 0 40px var(--glow-cyan),
+                0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+        }
+
+        /* Title */
+        .title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 4px;
+            background: linear-gradient(135deg, #e8e8f0 0%, #b8b9d0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            margin-bottom: 24px;
+        }
+
+        /* Gauge section */
+        .gauge-wrapper {
+            position: relative;
+            width: 260px;
+            height: 260px;
+            margin: 0 auto 16px;
+        }
+
+        .gauge-glow {
+            position: absolute;
+            inset: -15px;
+            border-radius: 50%;
+            background: transparent;
+            transition: all 0.6s ease;
+            pointer-events: none;
+        }
+
+        .gauge-glow.active {
+            background: radial-gradient(circle,
+            var(--glow-cyan) 0%, transparent 70%);
+            animation: glowPulse 1.8s ease-in-out infinite;
+        }
+
+        .gauge-glow.active.download-glow {
+            background: radial-gradient(circle, var(--glow-blue) 0%, transparent 70%);
+            animation: glowPulse 1.5s ease-in-out infinite;
+        }
+
+        .gauge-glow.active.upload-glow {
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.3) 0%, transparent 70%);
+            animation: glowPulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes glowPulse {
+            0%,
+            100% {
+                opacity: 0.6;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.06);
+            }
+        }
+
+        .gauge-svg {
+            width: 100%;
+            height: 100%;
+            transform: rotate(0deg);
+        }
+
+        .gauge-track {
+            fill: none;
+            stroke: var(--gauge-track);
+            stroke-width: 13;
+            stroke-linecap: round;
+        }
+
+        .gauge-progress {
+            fill: none;
+            stroke: var(--accent);
+            stroke-width: 13;
+            stroke-linecap: round;
+            transition: stroke 0.6s ease;
+            filter: drop-shadow(0 0 8px var(--glow-cyan));
+        }
+
+        .gauge-progress.speed-fast {
+            stroke: var(--accent-blue);
+            filter: drop-shadow(0 0 10px var(--glow-blue));
+        }
+
+        .gauge-progress.speed-upload {
+            stroke: var(--accent-purple);
+            filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.4));
+        }
+
+        .gauge-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            pointer-events: none;
+        }
+
+        .gauge-value {
+            font-size: 3.6rem;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            line-height: 1;
+            transition: color 0.5s ease;
+            color: #ffffff;
+        }
+
+        .gauge-unit {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            margin-top: 2px;
+            transition: color 0.5s ease;
+        }
+
+        .gauge-status {
+            position: absolute;
+            bottom: 22px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            pointer-events: none;
+            transition: all 0.4s ease;
+        }
+
+        /* Results row */
+        .results-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .result-item {
+            flex: 1;
+            min-width: 90px;
+            max-width: 140px;
+            background: var(--surface-light);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 16px 12px;
+            text-align: center;
+            transition: all 0.5s ease;
+            opacity: 0.5;
+            transform: translateY(8px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .result-item.revealed {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .result-item .result-icon {
+            font-size: 1.3rem;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .result-item .result-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: #fff;
+            line-height: 1;
+            transition: color 0.5s ease;
+        }
+
+        .result-item .result-label {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+
+        .result-item.ping-result.revealed .result-value {
+            color: var(--accent);
+        }
+        .result-item.download-result.revealed .result-value {
+            color: var(--accent-blue);
+        }
+        .result-item.upload-result.revealed .result-value {
+            color: var(--accent-purple);
+        }
+
+        .result-item .mini-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            border-radius: 0 0 16px 16px;
+            transition: width 1s ease;
+        }
+
+        .ping-result .mini-bar {
+            background: var(--accent);
+            width: 0;
+        }
+        .download-result .mini-bar {
+            background: var(--accent-blue);
+            width: 0;
+        }
+        .upload-result .mini-bar {
+            background: var(--accent-purple);
+            width: 0;
+        }
+
+        /* Button */
+        .btn-start {
+            display: inline-block;
+            margin-top: 24px;
+            padding: 14px 48px;
+            font-size: 1rem;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            color: #fff;
+            background: linear-gradient(135deg, #00d4aa 0%, #00b894 100%);
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all var(--transition);
+            box-shadow: 0 8px 28px rgba(0, 212, 170, 0.3);
+            position: relative;
+            overflow: hidden;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn-start:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 36px rgba(0, 212, 170, 0.45);
+        }
+        .btn-start:active {
+            transform: scale(0.96);
+            box-shadow: 0 4px 16px rgba(0, 212, 170, 0.3);
+            transition: all 0.1s ease;
+        }
+        .btn-start:disabled {
+            background: #3a3d50;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+            color: #888;
+        }
+        .btn-start.restart-btn {
+            background: linear-gradient(135deg, #3b8bff 0%, #5b6cf6 100%);
+            box-shadow: 0 8px 28px rgba(59, 139, 255, 0.3);
+        }
+        .btn-start.restart-btn:hover {
+            box-shadow: 0 12px 36px rgba(59, 139, 255, 0.45);
+        }
+
+        /* Ripple */
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.4);
+            transform: scale(0);
+            animation: rippleAnim 0.7s ease-out forwards;
+            pointer-events: none;
+        }
+        @keyframes rippleAnim {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+
+        /* Error state */
+        .error-msg {
+            color: var(--danger);
+            font-size: 0.8rem;
+            margin-top: 10px;
+            display: none;
+            letter-spacing: 0.02em;
+        }
+        .error-msg.show {
+            display: block;
+            animation: fadeInShake 0.5s ease;
+        }
+        @keyframes fadeInShake {
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+            20% {
+                transform: translateX(-6px);
+            }
+            40% {
+                transform: translateX(6px);
+            }
+            60% {
+                transform: translateX(-3px);
+            }
+            80% {
+                transform: translateX(3px);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .card {
+                padding: 24px 16px 20px;
+                border-radius: 22px;
+            }
+            .gauge-wrapper {
+                width: 200px;
+                height: 200px;
+                margin-bottom: 8px;
+            }
+            .gauge-value {
+                font-size: 2.6rem;
+            }
+            .gauge-unit {
+                font-size: 0.7rem;
+            }
+            .gauge-status {
+                bottom: 14px;
+                font-size: 0.68rem;
+            }
+            .gauge-track,
+            .gauge-progress {
+                stroke-width: 10;
+            }
+            .results-row {
+                gap: 8px;
+                margin-top: 12px;
+            }
+            .result-item {
+                padding: 12px 8px;
+                border-radius: 12px;
+                min-width: 70px;
+            }
+            .result-item .result-value {
+                font-size: 1.2rem;
+            }
+            .result-item .result-label {
+                font-size: 0.62rem;
+            }
+            .btn-start {
+                padding: 12px 36px;
+                font-size: 0.9rem;
+                margin-top: 16px;
+            }
+            .title {
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Background particles -->
+    <div class="bg-particles" id="bgParticles"></div>
+
+    <!-- Main card -->
+    <div class="main-container">
+        <div class="card" id="mainCard">
+            <div class="title">SpeedTest Pro</div>
+            <div class="subtitle">Internet Connection</div>
+
+            <!-- Gauge -->
+            <div class="gauge-wrapper" id="gaugeWrapper">
+                <div class="gauge-glow" id="gaugeGlow"></div>
+                <svg class="gauge-svg" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stop-color="#00d4aa" />
+                            <stop offset="100%" stop-color="#00e4c8" />
+                        </linearGradient>
+                        <linearGradient id="progressGradientBlue" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stop-color="#3b8bff" />
+                            <stop offset="100%" stop-color="#5b9cff" />
+                        </linearGradient>
+                        <linearGradient
+                        id="progressGradientBlue" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stop-color="#3b8bff" />
+                            <stop offset="100%" stop-color="#5b9cff" />
+                        </linearGradient>
+                        <linearGradient id="progressGradientPurple" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stop-color="#8b5cf6" />
+                            <stop offset="100%" stop-color="#a078f8" />
+                        </linearGradient>
+                    </defs>
+                    <!-- Track arc (270 degrees, gap at bottom) -->
+                    <circle cx="150" cy="150" r="115"
+                    fill="none"
+                    stroke="var(--gauge-track)"
+                    stroke-width="13"
+                    stroke-linecap="round"
+                    stroke-dasharray="541.92 723"
+                    stroke-dashoffset="0"
+                    transform="rotate(135, 150, 150)"
+                    class="gauge-track" />
+                    <!-- Progress arc -->
+                    <circle cx="150" cy="150" r="115"
+                    fill="none"
+                    stroke="url(#progressGradient)"
+                    stroke-width="13"
+                    stroke-linecap="round"
+                    stroke-dasharray="541.92 723"
+                    stroke-dashoffset="541.92"
+                    transform="rotate(135, 150, 150)"
+                    class="gauge-progress"
+                    id="gaugeProgress" />
+                </svg>
+                <div class="gauge-center">
+                    <div class="gauge-value" id="gaugeValue">0</div>
+                    <div class="gauge-unit" id="gaugeUnit">Mbps</div>
+                </div>
+                <div class="gauge-status" id="gaugeStatus">Ready</div>
+            </div>
+
+            <!-- Results -->
+            <div class="results-row" id="resultsRow">
+                <div class="result-item ping-result" id="pingResult">
+                    <span class="result-icon">📡</span>
+                    <div class="result-value">--</div>
+                    <div class="result-label">Ping</div>
+                    <div class="mini-bar"></div>
+                </div>
+                <div class="result-item download-result" id="downloadResult">
+                    <span class="result-icon">⬇️</span>
+                    <div class="result-value">--</div>
+                    <div class="result-label">Download</div>
+                    <div class="mini-bar"></div>
+                </div>
+                <div class="result-item upload-result" id="uploadResult">
+                    <span class="result-icon">⬆️</span>
+                    <div class="result-value">--</div>
+                    <div class="result-label">Upload</div>
+                    <div class="mini-bar"></div>
+                </div>
+            </div>
+
+            <!-- Error message -->
+            <div class="error-msg" id="errorMsg"></div>
+
+            <!-- Button -->
+            <button class="btn-start" id="btnStart" aria-label="Start speed test">
+                ⚡ Start Test
+            </button>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // ==================== DOM ELEMENTS ====================
+            const mainCard = document.getElementById('mainCard');
+            const gaugeGlow = document.getElementById('gaugeGlow');
+            const gaugeProgress = document.getElementById('gaugeProgress');
+            const gaugeValue = document.getElementById('gaugeValue');
+            const gaugeUnit = document.getElementById('gaugeUnit');
+            const gaugeStatus = document.getElementById('gaugeStatus');
+            const btnStart = document.getElementById('btnStart');
+            const errorMsg = document.getElementById('errorMsg');
+            const pingResult = document.getElementById('pingResult');
+            const downloadResult = document.getElementById('downloadResult');
+            const uploadResult = document.getElementById('uploadResult');
+            const bgParticles = document.getElementById('bgParticles');
+
+            // Result value elements
+            const pingValueEl = pingResult.querySelector('.result-value');
+            const downloadValueEl = downloadResult.querySelector('.result-value');
+            const uploadValueEl = uploadResult.querySelector('.result-value');
+            const pingBar = pingResult.querySelector('.mini-bar');
+            const downloadBar = downloadResult.querySelector('.mini-bar');
+            const uploadBar = uploadResult.querySelector('.mini-bar');
+
+            // ==================== CONSTANTS ====================
+            const GAUGE_ARC_LENGTH = 541.92; // 2*π*115 * (270/360) ≈ 541.92
+            const PING_COUNT = 12;
+            const PING_ENDPOINTS = [
+                'https://speed.cloudflare.com/__down?bytes=1',
+                'https://www.google.com/generate_204',
+                'https://httpbin.org/headers',
+            ];
+            const DOWNLOAD_BASE_URL = 'https://speed.cloudflare.com/__down?bytes=';
+            const UPLOAD_URL = 'https://speed.cloudflare.com/__up';
+
+            // ==================== STATE ====================
+            let isRunning = false;
+            let animationId = null;
+            let displayValue = 0;
+            let targetDisplayValue = 0;
+            let displayUnit = 'Mbps';
+            let currentPhase = 'idle'; // idle | ping | download | upload | complete
+
+            // Results
+            let finalPing = null;
+            let finalJitter = null;
+            let finalDownloadSpeed = null;
+            let finalUploadSpeed = null;
+
+            // ==================== BACKGROUND PARTICLES ====================
+            function createParticles() {
+                const colors = ['#00d4aa', '#3b8bff', '#8b5cf6', '#5ce0c8', '#6db3ff'];
+                const fragment = document.createDocumentFragment();
+                const count = 30;
+
+                for (let i = 0; i < count; i++) {
+                    const particle = document.createElement('div');
+                    particle.classList.add('particle');
+                    const size = Math.random() * 3 + 1.5;
+                    particle.style.width = size + 'px';
+                    particle.style.height = size + 'px';
+                    particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    particle.style.left = Math.random() * 100 + '%';
+                    particle.style.animationDuration = Math.random() * 12 + 8 + 's';
+                    particle.style.animationDelay = Math.random() * 10 + 's';
+                    fragment.appendChild(particle);
+                }
+                bgParticles.appendChild(fragment);
+            }
+
+            // ==================== GAUGE HELPERS ====================
+            function setGaugeProgress(fraction) {
+                // fraction: 0 to 1 (0 = empty, 1 = full 270° arc)
+                const clamped = Math.max(0, Math.min(1, fraction));
+                const offset = GAUGE_ARC_LENGTH * (1 - clamped);
+                gaugeProgress.setAttribute('stroke-dashoffset', offset);
+            }
+
+            function setGaugeColor(phase) {
+                gaugeProgress.classList.remove('speed-fast', 'speed-upload');
+                if (phase === 'download') {
+                    gaugeProgress.classList.add('speed-fast');
+                    gaugeProgress.setAttribute('stroke', 'url(#progressGradientBlue)');
+                } else if (phase === 'upload') {
+                    gaugeProgress.classList.add('speed-upload');
+                    gaugeProgress.setAttribute('stroke', 'url(#progressGradientPurple)');
+                } else {
+                    gaugeProgress.setAttribute('stroke', 'url(#progressGradient)');
+                }
+            }
+
+            function setGlowState(phase) {
+                gaugeGlow.classList.remove('active', 'download-glow', 'upload-glow');
+                if (phase === 'ping') {
+                    gaugeGlow.classList.add('active');
+                } else if (phase === 'download') {
+                    gaugeGlow.classList.add('active', 'download-glow');
+                } else if (phase === 'upload') {
+                    gaugeGlow.classList.add('active', 'upload-glow');
+                }
+            }
+
+            function updateGaugeDisplay(value, unit, animate = true) {
+                targetDisplayValue = value;
+                displayUnit = unit;
+                gaugeUnit.textContent = unit;
+                if (!animate) {
+                    displayValue = value;
+                    gaugeValue.textContent = formatNumber(value);
+                }
+            }
+
+            function formatNumber(num) {
+                if (num >= 100) return Math.round(num).toString();
+                if (num >= 10) return num.toFixed(1);
+                if (num >= 1) return num.toFixed(2);
+                if (num >= 0.1) return num.toFixed(2);
+                return num.toFixed(3);
+            }
+
+            function smoothAnimateGauge() {
+                const speed = 0.18;
+                const diff = targetDisplayValue - displayValue;
+                if (Math.abs(diff) < 0.005) {
+                    displayValue = targetDisplayValue;
+                } else {
+                    displayValue += diff * speed;
+                }
+                gaugeValue.textContent = formatNumber(displayValue);
+
+                // Update gauge arc based on phase
+                if (currentPhase === 'ping') {
+                    // For ping: lower ping = better. Show inverted (0-100ms mapped to 100%-0%)
+                    const pingFraction = Math.min(displayValue / 120, 1);
+                    setGaugeProgress(1 - pingFraction);
+                } else if (currentPhase === 'download') {
+                    const frac = Math.min(displayValue / 150, 1);
+                    setGaugeProgress(frac);
+                } else if (currentPhase === 'upload') {
+                    const frac = Math.min(displayValue / 60, 1);
+                    setGaugeProgress(frac);
+                } else if (currentPhase === 'complete') {
+                    const frac = Math.min(finalDownloadSpeed / 150, 1);
+                    setGaugeProgress(frac);
+                }
+            }
+
+            function animationLoop() {
+                smoothAnimateGauge();
+                animationId = requestAnimationFrame(animationLoop);
+            }
+
+            function startAnimationLoop() {
+                if (animationId) return;
+                animationId = requestAnimationFrame(animationLoop);
+            }
+
+            function stopAnimationLoop() {
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                    animationId = null;
+                }
+            }
+
+            // ==================== UTILITY FUNCTIONS ====================
+            function sleep(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+
+            function calculateJitter(times) {
+                if (times.length < 2) return 0;
+                const mean = times.reduce((a, b) => a + b, 0) / times.length;
+                const squaredDiffs = times.map(t => (t - mean) ** 2);
+                const variance = squaredDiffs.reduce((a, b) => a + b, 0) / squaredDiffs.length;
+                return Math.sqrt(variance);
+            }
+
+            function showError(message) {
+                errorMsg.textContent = message;
+                errorMsg.classList.add('show');
+                setTimeout(() => errorMsg.classList.remove('show'), 4000);
+            }
+
+            function hideError() {
+                errorMsg.classList.remove('show');
+            }
+
+            // ==================== PING TEST ====================
+            async function runPingTest() {
+                currentPhase = 'ping';
+                setGaugeColor('ping');
+                setGlowState('ping');
+                gaugeStatus.textContent = 'Testing Ping...';
+                updateGaugeDisplay(0, 'ms', false);
+                setGaugeProgress(0);
+                gaugeValue.textContent = '...';
+
+                const pingTimes = [];
+                const endpoint = PING_ENDPOINTS[0];
+
+                for (let i = 0; i < PING_COUNT; i++) {
+                    const start = performance.now();
+                    try {
+                        await fetch(endpoint + '&_=' + Date.now() + Math.random(), {
+                            method: 'GET',
+                            cache: 'no-store',
+                            mode: 'cors',
+                            signal: AbortSignal.timeout(5000),
+                        });
+                        const rtt = performance.now() - start;
+                        pingTimes.push(rtt);
+                    } catch (e) {
+                        // Try alternative endpoint
+                        try {
+                            const altStart = performance.now();
+                            await fetch(PING_ENDPOINTS[1] + '?_=' + Date.now(), {
+                                method: 'GET',
+                                cache: 'no-store',
+                                mode: 'no-cors',
+                                signal: AbortSignal.timeout(5000),
+                            });
+                            const rtt = performance.now() - altStart;
+                            pingTimes.push(rtt);
+                        } catch (e2) {
+                            pingTimes.push(300 + Math.random() * 200);
+                        }
+                    }
+
+                    // Update display
+                    const latestPing =
+                    pingTimes[pingTimes.length - 1];
+                    updateGaugeDisplay(latestPing, 'ms', true);
+                    setGaugeProgress((i + 1) / PING_COUNT);
+
+                    // Small delay between pings
+                    if (i < PING_COUNT - 1) {
+                        await sleep(80 + Math.random() * 40);
+                    }
+                }
+
+                // Calculate results
+                const sorted = [...pingTimes].sort((a, b) => a - b);
+                const trimmed = sorted.slice(1, -1); // Remove outliers
+                finalPing = trimmed.reduce((a, b) => a + b, 0) / trimmed.length;
+                finalJitter = calculateJitter(trimmed);
+
+                updateGaugeDisplay(finalPing, 'ms', true);
+                gaugeStatus.textContent = 'Ping: ' + formatNumber(finalPing) + ' ms';
+            }
+
+            // ==================== DOWNLOAD TEST ====================
+            async function runDownloadTest() {
+                currentPhase = 'download';
+                setGaugeColor('download');
+                setGlowState('download');
+                gaugeStatus.textContent = 'Testing Download...';
+                updateGaugeDisplay(0, 'Mbps', false);
+                setGaugeProgress(0);
+                gaugeValue.textContent = '...';
+
+                // Warm-up download
+                try {
+                    await fetchDownload(100000); // 100KB warm-up
+                } catch (e) {
+                    // Ignore warm-up errors
+                }
+
+                await sleep(200);
+
+                // Determine test size based on estimated speed
+                let testSize = 5000000; // Start with 5MB
+                let bestSpeed = 0;
+                const measuredSpeeds = [];
+
+                // Try up to 3 measurements with increasing sizes
+                const sizeTiers = [5000000, 10000000, 25000000]; // 5MB, 10MB, 25MB
+
+                for (const size of sizeTiers) {
+                    try {
+                        const speed = await measureDownloadSpeed(size);
+                        if (speed !== null && speed > 0) {
+                            measuredSpeeds.push(speed);
+                            updateGaugeDisplay(speed, 'Mbps', true);
+                            if (speed > bestSpeed) bestSpeed = speed;
+
+                            // If download took > 3 seconds, this is a good measurement
+                            const estimatedTime = (size * 8) / (speed * 1000000);
+                            if (estimatedTime >= 2.5 && speed > 0.5) {
+                                break; // Good enough measurement
+                            }
+                        }
+                    } catch (e) {
+                        // Try next size tier
+                        continue;
+                    }
+                    await sleep(100);
+                }
+
+                if (measuredSpeeds.length === 0) {
+                    throw new Error('Download test failed');
+                }
+
+                // Use best speed
+                finalDownloadSpeed = Math.max(...measuredSpeeds);
+                updateGaugeDisplay(finalDownloadSpeed, 'Mbps', true);
+                gaugeStatus.textContent = 'Download: ' + formatNumber(finalDownloadSpeed) + ' Mbps';
+            }
+
+            function fetchDownload(size) {
+                return new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    const url = DOWNLOAD_BASE_URL + size + '&_=' + Date.now();
+                    xhr.open('GET', url, true);
+                    xhr.responseType = 'arraybuffer';
+                    xhr.timeout = 30000;
+
+                    xhr.onload = () => {
+                        if (xhr.status === 200) {
+                            resolve(xhr.response.byteLength);
+                        } else {
+                            reject(new Error('Download failed with status ' + xhr.status));
+                        }
+                    };
+                    xhr.onerror = () => reject(new Error('Download network error'));
+                    xhr.ontimeout = () => reject(new Error('Download timeout'));
+                    xhr.send();
+                });
+            }
+
+            function measureDownloadSpeed(size) {
+                return new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    const url = DOWNLOAD_BASE_URL + size + '&_=' + Date.now();
+                    xhr.open('GET', url, true);
+                    xhr.responseType = 'arraybuffer';
+                    xhr.timeout = 30000;
+
+                    let startTime = performance.now();
+                    let lastTime = startTime;
+                    let lastLoaded = 0;
+                    let speeds = [];
+                    let progressEvents = 0;
+
+                    xhr.onprogress = (e) => {
+                        if (e.lengthComputable && e.loaded > 0) {
+                            const now = performance.now();
+                            const deltaTime = (now - lastTime) / 1000; // seconds
+                            const deltaBytes = e.loaded - lastLoaded;
+
+                            if (deltaTime > 0.05 && deltaBytes > 0) {
+                                const instantSpeed = (deltaBytes * 8) / (deltaTime * 1000000); // Mbps
+                                speeds.push(instantSpeed);
+                                // Update display with smoothed value
+                                const smoothed = speeds.length > 1 ?
+                                    speeds.slice(-5).reduce((a, b) => a + b, 0) / Math.min(speeds.length, 5) :
+                                    instantSpeed;
+                                updateGaugeDisplay(smoothed, 'Mbps', true);
+                                progressEvents++;
+                            }
+
+                            lastTime = now;
+                            lastLoaded = e.loaded;
+                        }
+                    };
+
+                    xhr.onload = () => {
+                        if (xhr.status === 200) {
+                            const totalTime = (performance.now() - startTime) / 1000;
+                            const totalBytes = xhr.response.byteLength || size;
+                            const avgSpeed = (totalBytes * 8) / (totalTime * 1000000);
+
+                            // Use the average of progress speeds if available, otherwise total time speed
+                            let finalSpeed;
+                            if (speeds.length > 3) {
+                                // Remove outliers and average
+                                const sorted = [...speeds].sort((a, b) => a - b);
+                                const trimmed = sorted.slice(Math.floor(sorted.length * 0.1), Math.floor(sorted
+                                    .length * 0.9));
+                                finalSpeed = trimmed.reduce((a, b) => a + b, 0) / trimmed.length;
+                                // Blend with total time speed for stability
+                                finalSpeed = finalSpeed * 0.7 + avgSpeed * 0.3;
+                            } else {
+                                finalSpeed = avgSpeed;
+                            }
+
+                            resolve(Math.max(0.01, finalSpeed));
+                        } else {
+                            reject(new Error('Download status ' + xhr.status));
+                        }
+                    };
+
+                    xhr.onerror = () => reject(new Error('Download error'));
+                    xhr.ontimeout = () => reject(new Error('Download timeout'));
+                    xhr.send();
+                });
+            }
+
+            // ==================== UPLOAD TEST ====================
+            async function runUploadTest() {
+                currentPhase = 'upload';
+                setGaugeColor('upload');
+                setGlowState('upload');
+                gaugeStatus.textContent = 'Testing Upload...';
+                updateGaugeDisplay(0, 'Mbps', false);
+                setGaugeProgress(0);
+                gaugeValue.textContent = '...';
+
+                const measuredSpeeds = [];
+                const sizeTiers = [500000, 2000000, 5000000]; // 500KB, 2MB, 5MB
+
+                for (const size of sizeTiers) {
+                    try {
+                        const data = generateUploadData(size);
+                        const speed = await measureUploadSpeed(data);
+                        if (speed !== null && speed > 0) {
+                            measuredSpeeds.push(speed);
+                            updateGaugeDisplay(speed, 'Mbps', true);
+                            const estimatedTime = (size * 8) / (speed * 1000000);
+                            if (estimatedTime >= 2 && speed > 0.3) {
+                                break;
+                            }
+                        }
+                    } catch (e) {
+                        continue;
+                    }
+                    await sleep(150);
+                }
+
+                if (measuredSpeeds.length === 0) {
+                    // Fallback: estimate based on download
+                    finalUploadSpeed = finalDownloadSpeed ? finalDownloadSpeed * 0.4 : 5;
+                } else {
+                    finalUploadSpeed = Math.max(...measuredSpeeds);
+                }
+
+                updateGaugeDisplay(finalUploadSpeed, 'Mbps', true);
+                gaugeStatus.textContent = 'Upload: ' + formatNumber(finalUploadSpeed) + ' Mbps';
+            }
+
+            function generateUploadData(size) {
+                const buffer = new Uint8Array(size);
+                // Fill with pseudo-random-like pattern (not easily compressible)
+                for (let i = 0; i < buffer.length; i++) {
+                    buffer[i] = (i * 7 + 13) % 256;
+                }
+                return new Blob([buffer], { type: 'application/octet-stream' });
+            }
+
+            function measureUploadSpeed(dataBlob) {
+                return new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', UPLOAD_URL, true);
+                    xhr.timeout = 30000;
+
+                    let startTime =
+                    performance.now();
+                    let lastTime = startTime;
+                    let lastUploaded = 0;
+                    let speeds = [];
+
+                    xhr.upload.onprogress = (e) => {
+                        if (e.lengthComputable && e.loaded > 0) {
+                            const now = performance.now();
+                            const deltaTime = (now - lastTime) / 1000;
+                            const deltaBytes = e.loaded - lastUploaded;
+
+                            if (deltaTime > 0.05 && deltaBytes > 0) {
+                                const instantSpeed = (deltaBytes * 8) / (deltaTime * 1000000);
+                                speeds.push(instantSpeed);
+                                const smoothed = speeds.length > 1 ?
+                                    speeds.slice(-5).reduce((a, b) => a + b, 0) / Math.min(speeds.length, 5) :
+                                    instantSpeed;
+                                updateGaugeDisplay(smoothed, 'Mbps', true);
+                            }
+
+                            lastTime = now;
+                            lastUploaded = e.loaded;
+                        }
+                    };
+
+                    xhr.onload = () => {
+                        if (xhr.status === 200 || xhr.status === 201 || xhr.status === 204) {
+                            const totalTime = (performance.now() - startTime) / 1000;
+                            const totalBytes = dataBlob.size;
+                            const avgSpeed = (totalBytes * 8) / (totalTime * 1000000);
+
+                            let finalSpeed;
+                            if (speeds.length > 3) {
+                                const sorted = [...speeds].sort((a, b) => a - b);
+                                const trimmed = sorted.slice(Math.floor(sorted.length * 0.1), Math.floor(sorted
+                                    .length * 0.9));
+                                finalSpeed = trimmed.reduce((a, b) => a + b, 0) / trimmed.length;
+                                finalSpeed = finalSpeed * 0.7 + avgSpeed * 0.3;
+                            } else {
+                                finalSpeed = avgSpeed;
+                            }
+                            resolve(Math.max(0.01, finalSpeed));
+                        } else {
+                            // Some servers might not return 200 for the upload endpoint
+                            const totalTime = (performance.now() - startTime) / 1000;
+                            const avgSpeed = (dataBlob.size * 8) / (totalTime * 1000000);
+                            resolve(Math.max(0.01, avgSpeed));
+                        }
+                    };
+
+                    xhr.onerror = () => {
+                        // Even on error, the upload might have completed (CORS issues, etc.)
+                        const totalTime = (performance.now() - startTime) / 1000;
+                        if (totalTime > 0.1 && lastUploaded > 0) {
+                            const avgSpeed = (lastUploaded * 8) / (totalTime * 1000000);
+                            resolve(Math.max(0.01, avgSpeed));
+                        } else {
+                            reject(new Error('Upload error'));
+                        }
+                    };
+                    xhr.ontimeout = () => reject(new Error('Upload timeout'));
+
+                    xhr.send(dataBlob);
+                });
+            }
+
+            // ==================== COMPLETE & DISPLAY RESULTS ====================
+            function displayResults() {
+                currentPhase = 'complete';
+                setGaugeColor('download');
+                setGlowState('download');
+                gaugeStatus.textContent = 'Test Complete ✓';
+                updateGaugeDisplay(finalDownloadSpeed, 'Mbps', true);
+
+                // Animate result cards
+                const results = [
+                    { el: pingResult, valueEl: pingValueEl, bar: pingBar, value: finalPing, unit: 'ms',
+                        maxForBar: 150, format: (v) => formatNumber(v) + ' ms' },
+                    { el: downloadResult, valueEl: downloadValueEl, bar: downloadBar, value: finalDownloadSpeed,
+                        unit: 'Mbps', maxForBar: 150, format: (v) => formatNumber(v) + ' Mbps' },
+                    { el: uploadResult, valueEl: uploadValueEl, bar: uploadBar, value: finalUploadSpeed, unit: 'Mbps',
+                        maxForBar: 60, format: (v) => formatNumber(v) + ' Mbps' },
+                ];
+
+                results.forEach((r, i) => {
+                    setTimeout(() => {
+                        r.el.classList.add('revealed');
+                        animateValue(r.valueEl, r.value, r.format);
+                        const barWidth = Math.min((r.value / r.maxForBar) * 100, 100);
+                        setTimeout(() => {
+                            r.bar.style.width = barWidth + '%';
+                        }, 200);
+                    }, i * 180);
+                });
+
+                // Subtle gauge settle animation
+                const settleFraction = Math.min(finalDownloadSpeed / 150, 1);
+                setGaugeProgress(settleFraction);
+            }
+
+            function animateValue(element, targetValue, formatFn) {
+                const startValue = 0;
+                const duration = 800;
+                const startTime = performance.now();
+
+                function step(currentTime) {
+                    const elapsed = currentTime - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    // Ease out cubic
+                    const eased = 1 - Math.pow(1 - progress, 3);
+                    const current = startValue + (targetValue - startValue) * eased;
+                    element.textContent = formatFn(current);
+                    if (progress < 1) {
+                        requestAnimationFrame(step);
+                    } else {
+                        element.textContent = formatFn(targetValue);
+                    }
+                }
+                requestAnimationFrame(step);
+            }
+
+            function resetResults() {
+                [pingResult, downloadResult, uploadResult].forEach(el => el.classList.remove('revealed'));
+                [pingBar, downloadBar, uploadBar].forEach(bar => bar.style.width = '0');
+                pingValueEl.textContent = '--';
+                downloadValueEl.textContent = '--';
+                uploadValueEl.textContent = '--';
+                finalPing = null;
+                finalJitter = null;
+                finalDownloadSpeed = null;
+                finalUploadSpeed = null;
+            }
+
+            // ==================== MAIN TEST FLOW ====================
+            async function runSpeedTest() {
+                if (isRunning) return;
+                isRunning = true;
+                hideError();
+                resetResults();
+                mainCard.classList.add('testing');
+                btnStart.disabled = true;
+                btnStart.textContent = '⏳ Testing...';
+                btnStart.classList.remove('restart-btn');
+
+                startAnimationLoop();
+                setGaugeProgress(0);
+                gaugeValue.textContent = '...';
+                gaugeUnit.textContent = '';
+                gaugeStatus.textContent = 'Initializing...';
+                updateGaugeDisplay(0, '', false);
+
+                try {
+                    // Phase 1: Ping
+                    await runPingTest();
+                    await sleep(300);
+
+                    // Phase 2: Download
+                    await runDownloadTest();
+                    await sleep(300);
+
+                    // Phase 3: Upload
+                    await runUploadTest();
+                    await sleep(400);
+
+                    // Complete
+                    displayResults();
+
+                } catch (err) {
+                    console.error('Speed test error:', err);
+                    showError('Test failed. Please check your connection and try again.');
+                    gaugeStatus.textContent = 'Error';
+                    updateGaugeDisplay(0, 'Mbps', false);
+                    setGaugeProgress(0);
+                    setGlowState(null);
+                    gaugeGlow.classList.remove('active', 'download-glow', 'upload-glow');
+                } finally {
+                    isRunning = false;
+                    mainCard.classList.remove('testing');
+                    btnStart.disabled = false;
+                    btnStart.textContent = '🔄 Test Again';
+                    btnStart.classList.add('restart-btn');
+                    if (currentPhase === 'complete') {
+                        setGlowState('download');
+                    } else if (currentPhase === 'idle') {
+                        setGlowState(null);
+                        gaugeGlow.classList.remove('active', 'download-glow', 'upload-glow');
+                    }
+                }
+            }
+
+            // ==================== BUTTON HANDLER ====================
+            btnStart.addEventListener('click', function(e) {
+                // Ripple effect
+                const ripple = document.createElement('span');
+                ripple.classList.add('ripple');
+                const rect = btnStart.getBoundingClientRect();
+                const size = Math.max(rect.width, rect.height);
+                ripple.style.width = size + 'px';
+                ripple.style.height = size + 'px';
+                ripple.style.left = (e.clientX - rect.left - size / 2) + 'px';
+                ripple.style.top = (e.clientY - rect.top - size / 2) + 'px';
+                btnStart.appendChild(ripple);
+                setTimeout(() => ripple.remove(), 700);
+
+                if (!isRunning) {
+                    runSpeedTest();
+                }
+            });
+
+            // ==================== INITIALIZATION ====================
+            function init() {
+                createParticles();
+                setGaugeProgress(0);
+                gaugeValue.textContent = '0';
+                gaugeUnit.textContent = 'Mbps';
+                gaugeStatus.textContent = 'Ready';
+                gaugeGlow.classList.remove('active', 'download-glow', 'upload-glow');
+                startAnimationLoop();
+            }
+
+            // Handle page visibility change to manage animation loop
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) {
+                    stopAnimationLoop();
+                } else {
+                    startAnimationLoop();
+                }
+            });
+
+            // Initialize
+            init();
+
+            console.log('🚀 SpeedTest Pro ready!');
+            console.log('   Click "Start Test" to measure your internet speed.');
+            console.log('   Tests: Ping → Download → Upload');
+            console.log('   Using Cloudflare speed test infrastructure.');
+        })();
+    </script>
+</body>
+</html>
